@@ -1,6 +1,4 @@
 import React from 'react';
-import Sidepanel from './Sidepanel/Sidepanel';
-
 import WebSocketInstance from '../websocket';
 
 
@@ -20,11 +18,11 @@ class Chat extends React.Component {
         setTimeout(
             function () {
                 if (WebSocketInstance.state() === 1) {
-                    console.log("Connection is made")
+                    console.log("Connection is made");
                     callback();
                     return;
                 } else {
-                    console.log("wait for connection...")
+                    console.log("wait for connection...");
                     component.waitForSocketConnection(callback);
                 }
             }, 100);
@@ -47,7 +45,7 @@ class Chat extends React.Component {
     sendMessageHandler = (e) => {
         e.preventDefault();
         const messageObject = {
-            from: "margarida",
+            from: "admin",
             content: this.state.message,
         };
         WebSocketInstance.newChatMessage(messageObject);
@@ -56,8 +54,25 @@ class Chat extends React.Component {
         });
     }
 
+    renderTimestamp = timestamp => {
+        let prefix = '';
+        const timeDiff = Math.round((new Date().getTime() - new Date(timestamp).getTime()) / 60000);
+        if (timeDiff < 1) {
+            prefix = 'just now...';
+        } else if (timeDiff < 60 && timeDiff > 1) {
+            prefix = `${timeDiff} minutes ago`;
+        } else if (timeDiff < 24 * 60 && timeDiff > 60) {
+            prefix = `${Math.round(timeDiff / 60)} hours ago`;
+        } else if (timeDiff < 31 * 24 * 60 && timeDiff > 24 * 60) {
+            prefix = `${Math.round(timeDiff / (60 * 24))} days ago`;
+        } else {
+            prefix = `${new Date(timestamp)}`;
+        }
+        return prefix
+    }
+
     renderMessages = (messages) => {
-        const currentUser = "margarida";
+        const currentUser = "admin";
         return messages.map((message, i) => (
             <li
                 key={message.id}
@@ -65,54 +80,58 @@ class Chat extends React.Component {
                 <img src="http://emilcarlsson.se/assets/mikeross.png" />
                 <p>{message.content}
                     <br />
-                    <small className={message.author === currentUser ? 'sent' : 'replies'}>
-                        {Math.round((new Date().getTime() - new Date(message.timestamp).getTime()) / 60000)} minutes ago
+                    <small>
+                        {this.renderTimestamp(message.timestamp)}
                     </small>
                 </p>
             </li>
         ));
     }
 
+    scrollToBottom = () => {
+        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+    }
+
+    componentDidMount() {
+        WebSocketInstance.connect();
+        this.scrollToBottom();
+    }
+
+    componentDidUpdate() {
+        this.scrollToBottom();
+    }
+
     render() {
         const messages = this.state.messages;
         return (
-            <div id="frame">
-                <Sidepanel />
-                <div className="content">
-                    <div className="contact-profile">
-                        <img src="http://emilcarlsson.se/assets/harveyspecter.png" alt="" />
-                        <p>username</p>
-                        <div className="social-media">
-                            <i className="fa fa-facebook" aria-hidden="true"></i>
-                            <i className="fa fa-twitter" aria-hidden="true"></i>
-                            <i className="fa fa-instagram" aria-hidden="true"></i>
+            <div>
+                <div className="messages">
+                    <ul id="chat-log">
+                        {
+                            messages &&
+                            this.renderMessages(messages)
+                        }
+                        <div style={{ float: "left", clear: "both" }}
+                            ref={(el) => { this.messagesEnd = el; }}>
                         </div>
-                    </div>
-                    <div className="messages">
-                        <ul id="chat-log">
-                            {
-                                messages &&
-                                this.renderMessages(messages)
-                            }
-                        </ul>
-                    </div>
-                    <div className="message-input">
-                        <form onSubmit={this.sendMessageHandler}>
-                            <div className="wrap">
-                                <input
-                                    onChange={this.messageChangeHandler}
-                                    value={this.state.message}
-                                    required
-                                    id="chat-message-input"
-                                    type="text"
-                                    placeholder="Write your message..." />
-                                <i className="fa fa-paperclip attachment" aria-hidden="true"></i>
-                                <button id="chat-message-submit" className="submit">
-                                    <i className="fa fa-paper-plane" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                    </ul>
+                </div>
+                <div className="message-input">
+                    <form onSubmit={this.sendMessageHandler}>
+                        <div className="wrap">
+                            <input
+                                onChange={this.messageChangeHandler}
+                                value={this.state.message}
+                                required
+                                id="chat-message-input"
+                                type="text"
+                                placeholder="Write your message..." />
+                            <i className="fa fa-paperclip attachment" aria-hidden="true"></i>
+                            <button id="chat-message-submit" className="submit">
+                                <i className="fa fa-paper-plane" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         );
