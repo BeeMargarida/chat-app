@@ -5,6 +5,7 @@ import { connect } from "react-redux";
 import { withRouter } from "react-router-dom";
 import * as navActions from "../store/actions/nav";
 import * as messageActions from "../store/actions/message";
+import { HOST_URL } from "../settings";
 
 const FormItem = Form.Item;
 
@@ -34,13 +35,13 @@ class HorizontalAddChatForm extends React.Component {
     this.props.form.validateFields((err, values) => {
       if (!err) {
         const combined = [...usernames, this.props.username];
-        
+        console.log(combined);
         axios.defaults.headers = {
           "Content-Type": "application/json",
           Authorization: `Token ${this.props.token}`
         };
         axios
-          .post("http://127.0.0.1:8000/chat/create/", {
+          .post(`${HOST_URL}/chat/create/`, {
             messages: [],
             participants: combined
           })
