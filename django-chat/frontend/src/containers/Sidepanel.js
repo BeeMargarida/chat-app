@@ -1,8 +1,11 @@
 import React from 'react';
+import axios from 'axios';
 import { Spin, Icon } from 'antd';
 import { connect } from 'react-redux';
-import * as actions from '../store/actions/auth';
 import Contact from '../components/Contact';
+import * as authActions from '../store/actions/auth';
+import * as navActions from '../store/actions/nav';
+import * as messageActions from '../store/actions/message';
 
 const antIcon = <Icon type="loading" style={{ fontSize: 24 }} spin />;
 
@@ -11,6 +14,27 @@ class Sidepanel extends React.Component {
 
     state = {
         loginForm: true,
+    }
+
+    waitForAuthDetails() {
+        const component = this;
+        setTimeout(() => {
+            if(component.props.token !== null && component.props.token !== undefined){
+                component.props.getUserChats(component.props.username, component.props.token);
+                return;
+            }
+            else {
+                component.waitForAuthDetails();
+            }
+        }, 100);
+    }
+
+    componentDidMount() {
+        this.waitForAuthDetails();
+    }
+
+    openAddChatPopup() {
+        this.props.addChat();
     }
 
     changeForm = () => {
@@ -35,6 +59,16 @@ class Sidepanel extends React.Component {
     }
 
     render() {
+        const activeChats = this.props.chats.map(c => {
+            return (
+                <Contact
+                    key={c.id}
+                    name="Harvey Specter"
+                    picURL="http://emilcarlsson.se/assets/louislitt.png"
+                    status="busy"
+                    chatURL={`/${c.id}`} />
+            )
+        })
         return (
             <div id="sidepanel">
                 <div id="profile">
@@ -99,16 +133,14 @@ class Sidepanel extends React.Component {
                 </div>
                 <div id="contacts">
                     <ul>
-                        <Contact
-                            name="yooo"
-                            status="online"
-                            picURL="http://emilcarlsson.se/assets/louislitt.png"
-                            chatURL="/louis"
-                        />
+                        {activeChats}
                     </ul>
                 </div>
                 <div id="bottom-bar">
-                    <button id="addcontact"><i className="fa fa-user-plus fa-fw" aria-hidden="true"></i> <span>Add contact</span></button>
+                    <button id="addcontact" onClick={() => this.openAddChatPopup()}>
+                        <i className="fa fa-user-plus fa-fw" aria-hidden="true"></i>
+                        <span>Add Chat</span>
+                    </button>
                     <button id="settings"><i className="fa fa-cog fa-fw" aria-hidden="true"></i> <span>Settings</span></button>
                 </div>
             </div>
@@ -118,16 +150,21 @@ class Sidepanel extends React.Component {
 
 const mapStateToProps = state => {
     return {
-        isAuthenticated: state.token !== null,
-        loading: state.loading
+        isAuthenticated: state.auth.token !== null,
+        loading: state.auth.loading,
+        token: state.auth.token,
+        username: state.auth.username,
+        chats: state.message.chats
     }
 }
 
 const mapDispatchToProps = dispatch => {
     return {
-        login: (userName, password) => dispatch(actions.authLogin(userName, password)),
-        logout: () => dispatch(actions.logout()),
-        signup: (username, email, password1, password2) => dispatch(actions.authSignup(username, email, password1, password2)),
+        login: (userName, password) => dispatch(authActions.authLogin(userName, password)),
+        logout: () => dispatch(authActions.logout()),
+        signup: (username, email, password1, password2) => dispatch(authActions.authSignup(username, email, password1, password2)),
+        addChat: () => dispatch(navActions.openAddChatPopup()),
+        getUserChats: (username, token) => dispatch(messageActions.getUserChats(username, token))
     }
 }
 
